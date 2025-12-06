@@ -1,26 +1,44 @@
-
 <!doctype html>
-
 <html lang="en">
 <head>
-
   <meta charset="utf-8">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DSI Text Classifier</title>
-
   <meta name="description" content="The Galvanize DSI Text Classifier">
   <meta name="author" content="DSI Instructor">
-
+  <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
 </head>
-
 <body>
-
-  <h1>Your Predicted Article Type</h1>
-
-  <span style="color: blue; font-weight: bold;">Your Article</span>
-  <p>{{ article }}</p>
-  <span style="color: blue; font-weight: bold;">Your Predicted Class</span>
-  <p>{{ predicted }}</p>
-
+  <div class="container">
+    <div class="row" style="margin-top: 30px;">
+      <div class="col-md-12">
+        <h1>Your Predicted Article Type</h1>
+      </div>
+    </div>
+    <div class="row" style="margin-top: 20px;">
+      <div class="col-md-12">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title">Predicted Classification</h3>
+          </div>
+          <div class="panel-body">
+            <h2 class="text-primary">{{ predicted }}</h2>
+          </div>
+        </div>
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Your Article</h3>
+          </div>
+          <div class="panel-body">
+            <p>{{ article }}</p>
+          </div>
+        </div>
+        <a href="/submit" class="btn btn-primary">Classify Another</a>
+        <a href="/" class="btn btn-default">Home</a>
+      </div>
+    </div>
+  </div>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="/bootstrap/js/bootstrap.min.js"></script>
 </body>
 </html>
