@@ -19,13 +19,13 @@ with open('static/model.pkl', 'rb') as f:
 @app.route('/', methods=['GET'])
 def index():
     """Render a simple splash page."""
-    return render_template('form/index.html')
+    return render_template('index.html')
 
 @app.route('/submit', methods=['GET'])
 def submit():
     """Render a page containing a textarea input where the user can paste an
     article to be classified.  """
-    return render_template('form/submit.html')
+    return render_template('submit.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -34,7 +34,7 @@ def predict():
     """
     data = str(request.form['article_body'])
     pred = str(model.predict([data])[0])
-    return render_template('form/predict.html', article=data, predicted=pred)
+    return render_template('predict.html', article=data, predicted=pred)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', debug=True)
