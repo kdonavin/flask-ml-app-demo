@@ -87,7 +87,7 @@ def predict_traditional():
     return render_template('predict.html', article=data, predicted=pred, probability=max_prob)
 
 if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000)) #finds port set by Heroku or defaults to 5000
     app.run(host='0.0.0.0'
-            , port=5000
+            , port=port
             , threaded=True) 
-    # These parameters are intended for AWS deployment. Adjust as needed.
