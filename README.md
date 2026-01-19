@@ -34,7 +34,7 @@ python src/build_model.py --data <path_to_training_data> --out <path_to_save_mod
 ```
 
 **Parameters:**
-- `--data`: Path to a CSV file containing training data
+- `--data`: (Deprecated) Path to a CSV file containing training data
   - Must have columns: `body` (article text) and `section_name` (category label)
   - Example: `data/articles.csv`
   

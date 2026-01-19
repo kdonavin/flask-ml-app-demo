@@ -96,34 +96,32 @@ class TextClassifier(object):
 
 
 def get_data(filename=None):
-    """Load data from the database and return training data and responses.
+    """Load training data.
 
-    Parameters
-    ----------
-    filename: Deprecated. Kept for backward compatibility. Database URL is read 
-              from environment variable DATABASE_URL or defaults to data/articles.db
+    If a CSV `filename` is provided (deprecated), load from CSV.
+    Otherwise, load from the database indicated by `DATABASE_URL` or
+    default `sqlite:///data/articles.db`.
 
     Returns
     -------
-    X: A numpy array containing the text fragments used for training.
-    y: A numpy array containing labels, used for model response.
+    X: A list containing text fragments used for training.
+    y: A list containing labels, used for model response.
     """
-    # Get database URL from environment, default to data/articles.db
+    if filename:
+        # Deprecated path: load directly from CSV
+        df = pd.read_csv(filename)
+        return list(df.body), list(df.section_name)
+
     DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/articles.db')
-    
-    # Create engine and session
+
     engine = create_engine(DATABASE_URL)
     Session = sessionmaker(bind=engine)
     session = Session()
-    
+
     try:
-        # Query all articles from the database
         articles = session.query(Article).all()
-        
-        # Convert to lists
         bodies = [article.body for article in articles]
         sections = [article.section_name for article in articles]
-        
         return bodies, sections
     finally:
         session.close()
@@ -132,12 +130,16 @@ def get_data(filename=None):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Fit a Text Classifier model and save the results.')
-    parser.add_argument('--data', help='A csv file with input data.')
+    parser.add_argument('--data', help='(Deprecated) Path to CSV training data.')
     parser.add_argument('--out', help='A file to save the pickled model object to.')
     args = parser.parse_args()
 
-    print("Loading data from database...")
-    X, y = get_data()
+    if args.data:
+        print("[DEPRECATED] --data provided: loading training data from CSV.")
+        X, y = get_data(args.data)
+    else:
+        print("Loading data from database...")
+        X, y = get_data()
     print(f"Data loaded successfully. Total articles: {len(X)}")
     print(f"Unique sections: {len(set(y))}")
     
