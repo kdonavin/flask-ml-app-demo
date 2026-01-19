@@ -16,6 +16,9 @@ import pandas as pd
 import os
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.naive_bayes import MultinomialNB
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from create_db import Article, Base
 
 
 class TextClassifier(object):
@@ -92,21 +95,38 @@ class TextClassifier(object):
         return self._classifier.score(X, y)
 
 
-def get_data(filename):
-    """Load raw data from a file and return training data and responses.
+def get_data(filename=None):
+    """Load data from the database and return training data and responses.
 
     Parameters
     ----------
-    filename: The path to a csv file containing the raw text data and response.
+    filename: Deprecated. Kept for backward compatibility. Database URL is read 
+              from environment variable DATABASE_URL or defaults to data/articles.db
 
     Returns
     -------
     X: A numpy array containing the text fragments used for training.
     y: A numpy array containing labels, used for model response.
     """
-    df = pd.read_csv(filename)
-    X, y = df.body, df.section_name
-    return X, y
+    # Get database URL from environment, default to data/articles.db
+    DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/articles.db')
+    
+    # Create engine and session
+    engine = create_engine(DATABASE_URL)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    
+    try:
+        # Query all articles from the database
+        articles = session.query(Article).all()
+        
+        # Convert to lists
+        bodies = [article.body for article in articles]
+        sections = [article.section_name for article in articles]
+        
+        return bodies, sections
+    finally:
+        session.close()
 
 
 if __name__ == '__main__':
@@ -116,14 +136,23 @@ if __name__ == '__main__':
     parser.add_argument('--out', help='A file to save the pickled model object to.')
     args = parser.parse_args()
 
-    X, y = get_data(args.data)
+    print("Loading data from database...")
+    X, y = get_data()
+    print(f"Data loaded successfully. Total articles: {len(X)}")
+    print(f"Unique sections: {len(set(y))}")
+    
+    print("Training text classifier model...")
     tc = TextClassifier()
     tc.fit(X, y)
+    print("Model training complete.")
     
     # Create directory if it doesn't exist
     output_dir = os.path.dirname(args.out)
     if output_dir and not os.path.exists(output_dir):
+        print(f"Creating output directory: {output_dir}")
         os.makedirs(output_dir)
     
+    print(f"Saving model to {args.out}...")
     with open(args.out, 'wb') as f:  # Use 'wb' for binary write mode
         pickle.dump(tc, f)
+    print("Model saved successfully!")

@@ -2,11 +2,10 @@ import os
 import ast
 import pandas as pd
 from sqlalchemy import create_engine, Column, String, DateTime, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker
 
-# Get database URL from environment
-DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///articles.db') # Default to SQLite for local testing
+# Get database URL from environment, default to data/articles.db
+DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/articles.db')
 
 # Create engine
 engine = create_engine(DATABASE_URL)
