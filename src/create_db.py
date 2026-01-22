@@ -1,7 +1,7 @@
 import os
 import ast
 import pandas as pd
-from sqlalchemy import create_engine, Column, String, DateTime, Text
+from sqlalchemy import create_engine, Column, String, DateTime, Text, Integer, ForeignKey
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Get database URL from environment, default to data/articles.db
@@ -11,18 +11,33 @@ DATABASE_URL = os.getenv('DATABASE_URL', 'sqlite:///data/articles.db')
 engine = create_engine(DATABASE_URL)
 Base = declarative_base()
 
+# Define the Publishers table
+class Publisher(Base):
+    __tablename__ = 'publishers'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True)
+
+# Define the Authors table
+class Author(Base):
+    __tablename__ = 'authors'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, unique=True)
+
 # Define the Articles table
 class Article(Base):
     __tablename__ = 'articles'
     
     id = Column(String, primary_key=True)
+    headline = Column(String)
     pub_date = Column(DateTime)
-    source = Column(String)
+    auth_id = Column(Integer, ForeignKey('authors.id'))
+    pub_id = Column(Integer, ForeignKey('publishers.id'))
     section_name = Column(String)
+    subsection = Column(String)
     body = Column(Text)
     web_url = Column(String)
-    author = Column(String)
-
 
 def normalize_byline(byline_value):
     """Ensure byline data is a dict with a 'person' list."""
@@ -68,7 +83,7 @@ def load_articles_to_db():
     df = pd.read_csv(csv_path)
     
     # Select only the required columns
-    required_columns = ['pub_date', 'source', 'section_name', 'body', 'web_url', 'byline']
+    required_columns = ['pub_date', 'source', 'section_name', 'headline', 'subsection_name', 'body', 'web_url', 'byline']
     df = df[required_columns]
 
     # Clean up data - replace NaN with None
@@ -82,7 +97,8 @@ def load_articles_to_db():
     # Convert pub_date to datetime
     df['pub_date'] = pd.to_datetime(df['pub_date'], errors='coerce')
     
-    # Create all tables
+    # Drop all existing tables and create them fresh
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
     
     # Insert data into database
@@ -90,20 +106,49 @@ def load_articles_to_db():
     session = Session()
     
     try:
+        # Get or create publishers
+        publishers_map = {}
+        for source in df['source'].unique():
+            if source is not None:
+                pub = session.query(Publisher).filter_by(name=source).first()
+                if not pub:
+                    pub = Publisher(name=source)
+                    session.add(pub)
+                    session.flush()
+                publishers_map[source] = pub.id
+        
+        # Get or create authors
+        authors_map = {}
+        for author in df['author'].unique():
+            if author is not None and author.strip():
+                auth = session.query(Author).filter_by(name=author).first()
+                if not auth:
+                    auth = Author(name=author)
+                    session.add(auth)
+                    session.flush()
+                authors_map[author] = auth.id
+        
+        # Insert articles with foreign keys
         for idx, row in df.iterrows():
+            pub_id = publishers_map.get(row['source'])
+            auth_id = authors_map.get(row['author'])
+            
             article = Article(
                 id=str(idx),
                 pub_date=row['pub_date'],
-                source=row['source'],
+                pub_id=pub_id,
                 section_name=row['section_name'],
+                headline=row['headline'],
+                subsection=row['subsection_name'],
                 body=row['body'],
                 web_url=row['web_url'],
-                author=row['author']
+                auth_id=auth_id
             )
             session.add(article)
         
         session.commit()
         print(f"Successfully loaded {len(df)} articles into the database")
+        print(f"Added {len(publishers_map)} publishers and {len(authors_map)} authors")
         
     except Exception as e:
         session.rollback()
